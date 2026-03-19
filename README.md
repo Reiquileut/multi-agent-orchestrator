@@ -130,18 +130,24 @@ multi-agent-orchestrator/
 │   ├── test_cli.py            # CLI entry point tests
 │   └── test_config.py         # Configuration & environment tests
 ├── .github/
-│   └── workflows/
-│       └── ci.yml             # GitHub Actions CI pipeline
+│   ├── workflows/
+│   │   └── ci.yml             # GitHub Actions CI pipeline
+│   ├── ISSUE_TEMPLATE/        # Bug report & feature request templates
+│   └── pull_request_template.md
 ├── app.py                     # Streamlit demo application
 ├── demo.py                    # Quick demo with mock responses (no keys)
 ├── .env.example               # Environment variables template
+├── .pre-commit-config.yaml    # Ruff + pre-commit hooks
 ├── .streamlit/
 │   └── config.toml            # Streamlit theming
 ├── requirements.txt
+├── pyproject.toml             # Project metadata & tool config
 ├── Dockerfile
 ├── docker-compose.yml
 ├── Makefile
+├── CHANGELOG.md
 ├── CONTRIBUTING.md
+├── SECURITY.md
 ├── LICENSE
 └── README.md
 ```
