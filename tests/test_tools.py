@@ -1,7 +1,13 @@
 """Unit tests for orchestrator tools."""
 
+import sys
 import pytest
+from unittest.mock import patch, MagicMock
 from src.tools.calculator import calculate
+
+# Pre-register a mock tavily module so the inner `from tavily import TavilyClient` works
+_tavily_mock = MagicMock()
+sys.modules.setdefault("tavily", _tavily_mock)
 from src.tools.text_processing import summarize_text, extract_key_points
 
 
@@ -43,6 +49,100 @@ class TestCalculator:
     def test_nested_parentheses(self):
         result = calculate.invoke({"expression": "((2 + 3) * (4 - 1)) / 5"})
         assert result == "3.0"
+
+
+    def test_string_constant_rejected(self):
+        result = calculate.invoke({"expression": "'hello'"})
+        assert "Error" in result
+
+    def test_floor_division_rejected(self):
+        result = calculate.invoke({"expression": "10 // 3"})
+        assert "Error" in result
+
+    def test_bitwise_not_rejected(self):
+        result = calculate.invoke({"expression": "~5"})
+        assert "Error" in result
+
+    def test_lambda_rejected(self):
+        result = calculate.invoke({"expression": "(lambda x: x)"})
+        assert "Error" in result
+
+
+class TestSearch:
+    """Tests for web search and scrape tools (mocked Tavily)."""
+
+    def test_web_search_returns_formatted(self):
+        from src.tools.search import web_search
+
+        mock_response = {
+            "results": [
+                {"title": "Result 1", "url": "https://example.com/1", "content": "Content 1"},
+                {"title": "Result 2", "url": "https://example.com/2", "content": "Content 2"},
+            ]
+        }
+
+        with patch.object(_tavily_mock, "TavilyClient") as MockClient:
+            MockClient.return_value.search.return_value = mock_response
+            result = web_search.invoke({"query": "AI trends"})
+
+            assert "Result 1" in result
+            assert "Result 2" in result
+            assert "https://example.com/1" in result
+
+    def test_web_search_no_results(self):
+        from src.tools.search import web_search
+
+        with patch.object(_tavily_mock, "TavilyClient") as MockClient:
+            MockClient.return_value.search.return_value = {"results": []}
+            result = web_search.invoke({"query": "obscure query"})
+
+            assert result == "No results found."
+
+    def test_scrape_url_returns_content(self):
+        from src.tools.search import scrape_url
+
+        mock_response = {
+            "results": [{"raw_content": "Page content here " * 100}]
+        }
+
+        with patch.object(_tavily_mock, "TavilyClient") as MockClient:
+            MockClient.return_value.extract.return_value = mock_response
+            result = scrape_url.invoke({"url": "https://example.com"})
+
+            assert "Page content here" in result
+            assert len(result) <= 3000
+
+    def test_scrape_url_empty_content(self):
+        from src.tools.search import scrape_url
+
+        mock_response = {"results": [{"raw_content": ""}]}
+
+        with patch.object(_tavily_mock, "TavilyClient") as MockClient:
+            MockClient.return_value.extract.return_value = mock_response
+            result = scrape_url.invoke({"url": "https://example.com"})
+
+            assert result == "Could not extract content."
+
+    def test_scrape_url_no_results(self):
+        from src.tools.search import scrape_url
+
+        with patch.object(_tavily_mock, "TavilyClient") as MockClient:
+            MockClient.return_value.extract.return_value = {"results": []}
+            result = scrape_url.invoke({"url": "https://example.com"})
+
+            assert result == "Failed to fetch URL content."
+
+    def test_scrape_url_truncates_long_content(self):
+        from src.tools.search import scrape_url
+
+        long_content = "A" * 5000
+        mock_response = {"results": [{"raw_content": long_content}]}
+
+        with patch.object(_tavily_mock, "TavilyClient") as MockClient:
+            MockClient.return_value.extract.return_value = mock_response
+            result = scrape_url.invoke({"url": "https://example.com"})
+
+            assert len(result) == 3000
 
 
 class TestSummarizeText:
