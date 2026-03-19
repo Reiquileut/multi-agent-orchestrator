@@ -1,14 +1,14 @@
 """Unit tests for orchestrator tools."""
 
 import sys
-import pytest
 from unittest.mock import patch, MagicMock
-from src.tools.calculator import calculate
 
 # Pre-register a mock tavily module so the inner `from tavily import TavilyClient` works
 _tavily_mock = MagicMock()
 sys.modules.setdefault("tavily", _tavily_mock)
-from src.tools.text_processing import summarize_text, extract_key_points
+
+from src.tools.calculator import calculate  # noqa: E402
+from src.tools.text_processing import summarize_text, extract_key_points  # noqa: E402
 
 
 class TestCalculator:
@@ -50,7 +50,6 @@ class TestCalculator:
         result = calculate.invoke({"expression": "((2 + 3) * (4 - 1)) / 5"})
         assert result == "3.0"
 
-
     def test_string_constant_rejected(self):
         result = calculate.invoke({"expression": "'hello'"})
         assert "Error" in result
@@ -76,8 +75,16 @@ class TestSearch:
 
         mock_response = {
             "results": [
-                {"title": "Result 1", "url": "https://example.com/1", "content": "Content 1"},
-                {"title": "Result 2", "url": "https://example.com/2", "content": "Content 2"},
+                {
+                    "title": "Result 1",
+                    "url": "https://example.com/1",
+                    "content": "Content 1",
+                },
+                {
+                    "title": "Result 2",
+                    "url": "https://example.com/2",
+                    "content": "Content 2",
+                },
             ]
         }
 
@@ -101,9 +108,7 @@ class TestSearch:
     def test_scrape_url_returns_content(self):
         from src.tools.search import scrape_url
 
-        mock_response = {
-            "results": [{"raw_content": "Page content here " * 100}]
-        }
+        mock_response = {"results": [{"raw_content": "Page content here " * 100}]}
 
         with patch.object(_tavily_mock, "TavilyClient") as MockClient:
             MockClient.return_value.extract.return_value = mock_response
@@ -184,7 +189,9 @@ class TestExtractKeyPoints:
         assert result.startswith("•")
 
     def test_fallback_on_no_indicators(self):
-        text = "The cat sat on a mat. The dog ran in the park. Birds flew over the trees."
+        text = (
+            "The cat sat on a mat. The dog ran in the park. Birds flew over the trees."
+        )
         result = extract_key_points.invoke({"text": text})
         # Should return something (fallback)
         assert len(result) > 0

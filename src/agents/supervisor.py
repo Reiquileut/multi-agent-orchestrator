@@ -8,7 +8,7 @@ The Supervisor is the brain of the orchestrator. It:
 
 from collections import Counter
 
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from src.config import get_llm, settings
 from src.state import OrchestratorState
@@ -58,7 +58,9 @@ async def supervisor_node(state: OrchestratorState) -> dict:
         return {
             "current_agent": "FINISH",
             "iteration": iteration + 1,
-            "messages": [AIMessage(content="[Supervisor] Max iterations reached. Finalizing.")],
+            "messages": [
+                AIMessage(content="[Supervisor] Max iterations reached. Finalizing.")
+            ],
         }
 
     # Hard stop: if writer already produced output, we're done
@@ -66,7 +68,11 @@ async def supervisor_node(state: OrchestratorState) -> dict:
         return {
             "current_agent": "FINISH",
             "iteration": iteration + 1,
-            "messages": [AIMessage(content="[Supervisor] Writer has produced output. Finalizing.")],
+            "messages": [
+                AIMessage(
+                    content="[Supervisor] Writer has produced output. Finalizing."
+                )
+            ],
         }
 
     # Enforce pipeline order: every agent must be called at least once
@@ -78,29 +84,40 @@ async def supervisor_node(state: OrchestratorState) -> dict:
                 "current_agent": agent,
                 "iteration": iteration + 1,
                 "messages": [
-                    AIMessage(content=f"[Supervisor] Routing to: {agent} (required pipeline step)")
+                    AIMessage(
+                        content=f"[Supervisor] Routing to: {agent} (required pipeline step)"
+                    )
                 ],
             }
 
     # Format completed work for context
-    completed_work = "\n".join(
-        f"- [{out['agent']}]: {out['output'][:200]}..."
-        for out in state.get("agent_outputs", [])
-    ) or "None yet."
+    completed_work = (
+        "\n".join(
+            f"- [{out['agent']}]: {out['output'][:200]}..."
+            for out in state.get("agent_outputs", [])
+        )
+        or "None yet."
+    )
 
-    plan_str = "\n".join(
-        f"{i+1}. {step}" for i, step in enumerate(state.get("plan", []))
-    ) or "No plan yet."
+    plan_str = (
+        "\n".join(f"{i + 1}. {step}" for i, step in enumerate(state.get("plan", [])))
+        or "No plan yet."
+    )
 
-    agent_counts_str = ", ".join(
-        f"{agent}: {count}/{MAX_CALLS_PER_AGENT}"
-        for agent, count in agent_counts.items()
-    ) or "No agents called yet."
+    agent_counts_str = (
+        ", ".join(
+            f"{agent}: {count}/{MAX_CALLS_PER_AGENT}"
+            for agent, count in agent_counts.items()
+        )
+        or "No agents called yet."
+    )
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", SUPERVISOR_SYSTEM_PROMPT),
-        ("human", "Decide the next step."),
-    ])
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", SUPERVISOR_SYSTEM_PROMPT),
+            ("human", "Decide the next step."),
+        ]
+    )
 
     response = await llm.ainvoke(
         prompt.format_messages(
@@ -125,11 +142,15 @@ async def supervisor_node(state: OrchestratorState) -> dict:
             break
 
     # Enforce: block agent if it already hit the call limit
-    if next_agent != "FINISH" and agent_counts.get(next_agent, 0) >= MAX_CALLS_PER_AGENT:
+    if (
+        next_agent != "FINISH"
+        and agent_counts.get(next_agent, 0) >= MAX_CALLS_PER_AGENT
+    ):
         # If the LLM tried to call an exhausted agent, auto-advance
         # If all agents are exhausted, finish
         available = [
-            a for a in ["researcher", "analyst", "writer"]
+            a
+            for a in ["researcher", "analyst", "writer"]
             if agent_counts.get(a, 0) < MAX_CALLS_PER_AGENT
         ]
         if available:
@@ -153,19 +174,22 @@ async def plan_task(state: OrchestratorState) -> dict:
     """
     llm = get_llm(temperature=0)
 
-    plan_prompt = ChatPromptTemplate.from_messages([
-        ("system", (
-            "You are a task planner. Break down the following task into 2-4 clear, "
-            "sequential steps. Each step should be assignable to one of: "
-            "researcher, analyst, writer.\n\n"
-            "Respond with ONLY a numbered list of steps, nothing else."
-        )),
-        ("human", "{task}"),
-    ])
-
-    response = await llm.ainvoke(
-        plan_prompt.format_messages(task=state["task"])
+    plan_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                (
+                    "You are a task planner. Break down the following task into 2-4 clear, "
+                    "sequential steps. Each step should be assignable to one of: "
+                    "researcher, analyst, writer.\n\n"
+                    "Respond with ONLY a numbered list of steps, nothing else."
+                ),
+            ),
+            ("human", "{task}"),
+        ]
     )
+
+    response = await llm.ainvoke(plan_prompt.format_messages(task=state["task"]))
 
     # Parse numbered steps
     steps = [
@@ -177,7 +201,5 @@ async def plan_task(state: OrchestratorState) -> dict:
     return {
         "plan": steps or ["Research the topic", "Analyze findings", "Write the output"],
         "iteration": 0,
-        "messages": [
-            AIMessage(content=f"[Planner] Created plan:\n{response.content}")
-        ],
+        "messages": [AIMessage(content=f"[Planner] Created plan:\n{response.content}")],
     }

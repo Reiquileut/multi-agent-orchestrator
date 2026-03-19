@@ -15,9 +15,11 @@ class TestGetLlm:
             mock_settings.openai_api_key = "test-key"
 
             from src.config import get_llm
+
             llm = get_llm(temperature=0)
 
             from langchain_openai import ChatOpenAI
+
             assert isinstance(llm, ChatOpenAI)
 
     def test_get_llm_anthropic(self):
@@ -33,9 +35,11 @@ class TestGetLlm:
             mock_settings.anthropic_api_key = "test-key"
 
             from src.config import get_llm
+
             llm = get_llm(temperature=0)
 
             from langchain_anthropic import ChatAnthropic
+
             assert isinstance(llm, ChatAnthropic)
 
     def test_get_llm_invalid_provider(self):

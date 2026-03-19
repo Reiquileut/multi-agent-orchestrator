@@ -23,9 +23,7 @@ def web_search(query: str, max_results: int = 5) -> str:
     results = []
     for item in response.get("results", []):
         results.append(
-            f"**{item['title']}**\n"
-            f"URL: {item['url']}\n"
-            f"Content: {item['content']}\n"
+            f"**{item['title']}**\nURL: {item['url']}\nContent: {item['content']}\n"
         )
 
     return "\n---\n".join(results) if results else "No results found."

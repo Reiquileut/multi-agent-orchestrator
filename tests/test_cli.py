@@ -18,6 +18,7 @@ class TestRunTask:
             mock_orch.aget_state = AsyncMock(return_value=mock_state)
 
             from src.cli import run_task
+
             result = await run_task("test task", verbose=False)
 
             assert result == "Task completed."
@@ -33,7 +34,12 @@ class TestRunTask:
             yield {
                 "event": "on_chain_end",
                 "name": "researcher",
-                "data": {"output": {"agent_outputs": [{"output": "data"}], "current_agent": "analyst"}},
+                "data": {
+                    "output": {
+                        "agent_outputs": [{"output": "data"}],
+                        "current_agent": "analyst",
+                    }
+                },
             }
 
         with patch("src.cli.orchestrator") as mock_orch:
@@ -41,6 +47,7 @@ class TestRunTask:
             mock_orch.aget_state = AsyncMock(return_value=mock_state)
 
             from src.cli import run_task
+
             result = await run_task("test task", verbose=True)
 
             assert result == "Verbose output."
@@ -52,29 +59,39 @@ class TestMain:
     def test_main_with_positional_arg(self):
         """main() should call run_task with positional argument."""
         with patch("src.cli.argparse.ArgumentParser.parse_args") as mock_parse:
-            mock_parse.return_value = MagicMock(task="hello", task_flag=None, verbose=False)
+            mock_parse.return_value = MagicMock(
+                task="hello", task_flag=None, verbose=False
+            )
 
             with patch("src.cli.asyncio.run") as mock_run:
                 from src.cli import main
+
                 main()
                 mock_run.assert_called_once()
 
     def test_main_with_flag_arg(self):
         """main() should work with --task flag."""
         with patch("src.cli.argparse.ArgumentParser.parse_args") as mock_parse:
-            mock_parse.return_value = MagicMock(task=None, task_flag="foo", verbose=False)
+            mock_parse.return_value = MagicMock(
+                task=None, task_flag="foo", verbose=False
+            )
 
             with patch("src.cli.asyncio.run") as mock_run:
                 from src.cli import main
+
                 main()
                 mock_run.assert_called_once()
 
     def test_main_no_task_exits(self):
         """main() should error when no task is provided."""
         with patch("src.cli.argparse.ArgumentParser.parse_args") as mock_parse:
-            mock_parse.return_value = MagicMock(task=None, task_flag=None, verbose=False)
+            mock_parse.return_value = MagicMock(
+                task=None, task_flag=None, verbose=False
+            )
 
-            with patch("src.cli.argparse.ArgumentParser.error", side_effect=SystemExit(2)) as mock_error:
+            with patch(
+                "src.cli.argparse.ArgumentParser.error", side_effect=SystemExit(2)
+            ):
                 from src.cli import main
 
                 with pytest.raises(SystemExit):
@@ -83,6 +100,7 @@ class TestMain:
     def test_main_module_entry(self):
         """The __name__ == '__main__' block should exist."""
         import ast
+
         with open("src/cli.py") as f:
             tree = ast.parse(f.read())
 

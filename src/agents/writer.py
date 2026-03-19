@@ -38,18 +38,26 @@ async def writer_node(state: OrchestratorState) -> dict:
     """
     llm = get_llm(temperature=0.3)  # Slightly creative
 
-    source_material = "\n\n".join(
-        f"=== {o['agent'].upper()} OUTPUT ===\n{o['output']}"
-        for o in state.get("agent_outputs", [])
-    ) or "No source material available."
+    source_material = (
+        "\n\n".join(
+            f"=== {o['agent'].upper()} OUTPUT ===\n{o['output']}"
+            for o in state.get("agent_outputs", [])
+        )
+        or "No source material available."
+    )
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", WRITER_SYSTEM_PROMPT.format(
-            task=state["task"],
-            source_material=source_material,
-        )),
-        ("human", "Write the final deliverable for the task."),
-    ])
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                WRITER_SYSTEM_PROMPT.format(
+                    task=state["task"],
+                    source_material=source_material,
+                ),
+            ),
+            ("human", "Write the final deliverable for the task."),
+        ]
+    )
 
     response = await llm.ainvoke(prompt.format_messages())
 

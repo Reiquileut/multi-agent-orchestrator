@@ -25,9 +25,9 @@ async def run_task(task: str, verbose: bool = False) -> str:
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
     if verbose:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Task: {task}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
     # Stream events for verbose output
     if verbose:
@@ -37,7 +37,11 @@ async def run_task(task: str, verbose: bool = False) -> str:
             version="v2",
         ):
             if event["event"] == "on_chain_end" and event.get("name") in (
-                "planner", "supervisor", "researcher", "analyst", "writer"
+                "planner",
+                "supervisor",
+                "researcher",
+                "analyst",
+                "writer",
             ):
                 print(f"\n--- [{event['name'].upper()}] ---")
                 output = event.get("data", {}).get("output", {})
@@ -48,7 +52,7 @@ async def run_task(task: str, verbose: bool = False) -> str:
                     if output.get("current_agent"):
                         print(f"  → Next: {output['current_agent']}")
     else:
-        result = await orchestrator.ainvoke(
+        await orchestrator.ainvoke(
             {"task": task, "messages": []},
             config=config,
         )
@@ -58,9 +62,9 @@ async def run_task(task: str, verbose: bool = False) -> str:
     final_output = final_state.values.get("final_output", "No output generated.")
 
     if verbose:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("FINAL OUTPUT:")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(final_output)
 
     return final_output
@@ -77,12 +81,14 @@ def main():
         help="Task description to execute",
     )
     parser.add_argument(
-        "--task", "-t",
+        "--task",
+        "-t",
         dest="task_flag",
         help="Task description (alternative to positional arg)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Show intermediate agent outputs",
     )

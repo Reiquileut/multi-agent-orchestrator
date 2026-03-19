@@ -2,8 +2,6 @@
 
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from langchain_core.messages import AIMessage
-
 from src.state import OrchestratorState
 
 
@@ -66,7 +64,10 @@ class TestSupervisor:
             state = _make_state(
                 agent_outputs=[
                     {"agent": "researcher", "output": "Found key data about AI."},
-                    {"agent": "analyst", "output": "Key trends: agents, RAG, fine-tuning."},
+                    {
+                        "agent": "analyst",
+                        "output": "Key trends: agents, RAG, fine-tuning.",
+                    },
                 ],
                 iteration=3,
             )
@@ -80,7 +81,9 @@ class TestSupervisor:
         from src.agents.supervisor import plan_task
 
         mock_response = MagicMock()
-        mock_response.content = "1. Research AI trends\n2. Analyze findings\n3. Write report"
+        mock_response.content = (
+            "1. Research AI trends\n2. Analyze findings\n3. Write report"
+        )
 
         with patch("src.agents.supervisor.get_llm") as mock_llm:
             mock_llm.return_value.ainvoke = AsyncMock(return_value=mock_response)
@@ -90,7 +93,6 @@ class TestSupervisor:
 
             assert len(result["plan"]) == 3
             assert result["iteration"] == 0
-
 
     @pytest.mark.asyncio
     async def test_finishes_when_writer_has_output(self):
@@ -202,7 +204,11 @@ class TestSupervisor:
             state = _make_state()
             result = await plan_task(state)
 
-            assert result["plan"] == ["Research the topic", "Analyze findings", "Write the output"]
+            assert result["plan"] == [
+                "Research the topic",
+                "Analyze findings",
+                "Write the output",
+            ]
 
 
 class TestResearcher:
@@ -289,7 +295,10 @@ class TestAnalyst:
                 result = await analyst_node(state)
 
                 assert result["agent_outputs"][0]["agent"] == "analyst"
-                assert result["agent_outputs"][0]["output"] == "Key insight: AI is growing."
+                assert (
+                    result["agent_outputs"][0]["output"]
+                    == "Key insight: AI is growing."
+                )
 
     @pytest.mark.asyncio
     async def test_analyst_formats_previous_data(self):

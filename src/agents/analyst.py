@@ -41,30 +41,42 @@ async def analyst_node(state: OrchestratorState) -> dict:
 
     llm = get_llm(temperature=0)
 
-    previous_data = "\n\n".join(
-        f"=== From {o['agent']} ===\n{o['output']}"
-        for o in state.get("agent_outputs", [])
-    ) or "No previous data available."
+    previous_data = (
+        "\n\n".join(
+            f"=== From {o['agent']} ===\n{o['output']}"
+            for o in state.get("agent_outputs", [])
+        )
+        or "No previous data available."
+    )
 
     analyst_tools = [calculate, summarize_text, extract_key_points]
 
     react_agent = create_react_agent(
         llm,
         analyst_tools,
-        prompt=ChatPromptTemplate.from_messages([
-            ("system", ANALYST_SYSTEM_PROMPT.format(
-                task=state["task"],
-                previous_data=previous_data,
-            )),
-            ("placeholder", "{messages}"),
-        ]),
+        prompt=ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    ANALYST_SYSTEM_PROMPT.format(
+                        task=state["task"],
+                        previous_data=previous_data,
+                    ),
+                ),
+                ("placeholder", "{messages}"),
+            ]
+        ),
     )
 
     result = await react_agent.ainvoke(
         {"messages": [("human", f"Analyze the data for: {state['task']}")]}
     )
 
-    output = result["messages"][-1].content if result["messages"] else "No analysis produced."
+    output = (
+        result["messages"][-1].content
+        if result["messages"]
+        else "No analysis produced."
+    )
 
     return {
         "agent_outputs": [{"agent": "analyst", "output": output}],

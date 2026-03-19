@@ -40,10 +40,13 @@ async def researcher_node(state: OrchestratorState) -> dict:
     """
     llm = get_llm(temperature=0)
 
-    previous = "\n".join(
-        f"- [{o['agent']}]: {o['output'][:150]}"
-        for o in state.get("agent_outputs", [])
-    ) or "None."
+    previous = (
+        "\n".join(
+            f"- [{o['agent']}]: {o['output'][:150]}"
+            for o in state.get("agent_outputs", [])
+        )
+        or "None."
+    )
 
     plan_str = ", ".join(state.get("plan", []))
 
@@ -51,14 +54,19 @@ async def researcher_node(state: OrchestratorState) -> dict:
     react_agent = create_react_agent(
         llm,
         _researcher_tools,
-        prompt=ChatPromptTemplate.from_messages([
-            ("system", RESEARCHER_SYSTEM_PROMPT.format(
-                task=state["task"],
-                plan=plan_str,
-                previous_findings=previous,
-            )),
-            ("placeholder", "{messages}"),
-        ]),
+        prompt=ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    RESEARCHER_SYSTEM_PROMPT.format(
+                        task=state["task"],
+                        plan=plan_str,
+                        previous_findings=previous,
+                    ),
+                ),
+                ("placeholder", "{messages}"),
+            ]
+        ),
     )
 
     result = await react_agent.ainvoke(

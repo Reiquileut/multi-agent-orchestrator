@@ -17,7 +17,14 @@ class TestGraphStructure:
         graph = build_graph(with_memory=False)
         node_names = set(graph.get_graph().nodes.keys())
 
-        expected = {"planner", "supervisor", "researcher", "analyst", "writer", "assemble"}
+        expected = {
+            "planner",
+            "supervisor",
+            "researcher",
+            "analyst",
+            "writer",
+            "assemble",
+        }
         # LangGraph adds __start__ and __end__ nodes
         assert expected.issubset(node_names)
 
